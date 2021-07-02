@@ -1,0 +1,571 @@
+openapi: 3.0.0
+servers:
+  - description: Booking mock server
+    url: https://mock.connector.pouchnation.com
+info:
+  version: "1.0.0"
+  title: Booking API specification
+  description: All booking endpoints would be provided by ms-booking
+security:
+  - application:
+      - read
+      - write
+tags:
+  - name: booking
+    description: Booking management
+  - name: booking-guest
+    description: Booking guests management
+  - name: booking-item
+    description: Booking items management
+paths:
+  /booking/{bookingId}:
+    get:
+      tags:
+        - booking
+      summary: Get a booking details by id
+      description: Return a booking details with id
+      operationId: getBookingById
+      parameters:
+        - in: path
+          name: bookingId
+          required: true
+          schema:
+            type: integer
+            format: int64
+          style: simple
+          description: Unique id in ms-booking
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Booking'
+    put:
+      tags:
+        - booking
+      summary: Update a booking
+      description: Updating a booking by id
+      operationId: updateBooking
+      parameters:
+        - in: path
+          name: bookingId
+          required: true
+          schema:
+            type: integer
+            format: int64
+          style: simple
+          description: Unique id in ms-booking
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status:
+                  type: string
+                  enum:
+                    - CLAIMED
+
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          bookingId:
+                            type: integer
+                            format: int64
+                            minimum: 1
+                          status:
+                            type: string
+                            enum:
+                              - CLAIMED
+  /booking:
+    get:
+      tags:
+        - booking
+      summary: Filtering booking
+      description: Filtering booking data by criteria
+      operationId: filterBooking
+      parameters:
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 10
+        - in: query
+          name: criteria
+          schema:
+            $ref: '#/components/schemas/BookingCriteria'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Booking'
+                      metadata:
+                        type: object
+                        example:
+                          total: 100
+                          limit: 1
+                          offset: 0
+                        properties:
+                          total:
+                            type: integer
+                            format: int64
+                          limit:
+                            type: integer
+                            format: int64
+                          offset:
+                            type: integer
+                            format: int64
+    post:
+      tags:
+        - booking
+      summary: Creator of booking
+      description: >-
+        Posting a booking data which should be produced by PouchNation App
+      operationId: createBooking
+      requestBody:
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: '#/components/schemas/Booking'
+                - type: object
+                  required:
+                    - identifier
+                    - owner
+                  properties:
+                    applicationId:
+                      type: string
+                      example: POUCH_VENUE
+                    business:
+                      $ref: '#/components/schemas/Business'
+                    guests:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Guest'
+                    items:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Item'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        allOf:
+                          - type: object
+                            properties:
+                              bookingId:
+                                type: number
+                                format: int64
+                                minimum: 1
+  /booking/{bookingId}/guest:
+    get:
+      tags:
+        - booking-guest
+      summary: Filtering guest in a booking
+      description: Filtering a list of guest in an existing booking
+      operationId: filterBookingGuest
+      parameters:
+        - in: path
+          name: bookingId
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 100
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          allOf:
+                            - $ref: '#/components/schemas/Guest'
+                            - type: object
+                              properties:
+                                bookingGuestId:
+                                  type: integer
+                                  format: int64
+                      metadata:
+                        type: object
+                        example:
+                          total: 100
+                          limit: 100
+                          offset: 0
+                        properties:
+                          total:
+                            type: integer
+                            format: int64
+                          limit:
+                            type: integer
+                            format: int64
+                          offset:
+                            type: integer
+                            format: int64
+    post:
+      tags:
+        - booking-guest
+      summary: Add guests to an existing booking
+      description: Add a list of guests to an existing booking
+      operationId: addGuestToBooking
+      parameters:
+        - in: path
+          name: bookingId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Guest'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: integer
+                        format: int64
+                        description: Number of guests were added to the booking
+
+  /booking/{bookingId}/guest/{bookingGuestId}:
+    delete:
+      tags:
+        - booking-guest
+      summary: Delete a guest from an existing booking
+      description: Delete a guest from an existing booking
+      operationId: deleteGuestFromBooking
+      parameters:
+        - in: path
+          name: bookingId
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - in: path
+          name: bookingGuestId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: integer
+                        format: int64
+                        description: bookingGuestId has beed deleted from booking
+
+  /booking/{bookingId}/item:
+    get:
+      tags:
+        - booking-item
+      summary: Filtering items in a booking
+      description: Filtering a list of items in an existing booking
+      operationId: filterBookingItem
+      parameters:
+        - in: path
+          name: bookingId
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - in: query
+          name: offset
+          schema:
+            type: integer
+            default: 0
+        - in: query
+          name: limit
+          schema:
+            type: integer
+            default: 100
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          allOf:
+                            - $ref: '#/components/schemas/Item'
+                            - type: object
+                              properties:
+                                bookingItemId:
+                                  type: integer
+                                  format: int64
+                      metadata:
+                        type: object
+                        example:
+                          total: 100
+                          limit: 100
+                          offset: 0
+                        properties:
+                          total:
+                            type: integer
+                            format: int64
+                          limit:
+                            type: integer
+                            format: int64
+                          offset:
+                            type: integer
+                            format: int64
+    post:
+      tags:
+        - booking-item
+      summary: Add items to an existing booking
+      description: Add a list of items to an existing booking
+      operationId: addItemToBooking
+      parameters:
+        - in: path
+          name: bookingId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Item'
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: integer
+                        format: int64
+                        description: Number of items were added to the booking
+
+  /booking/{bookingId}/item/{bookingItemId}:
+    delete:
+      tags:
+        - booking-item
+      summary: Delete an item from existing booking
+      description: Delete an item from existing booking
+      operationId: deleteItemFromBooking
+      parameters:
+        - in: path
+          name: bookingId
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - in: path
+          name: bookingItemId
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/Result'
+                  - type: object
+                    properties:
+                      data:
+                        type: integer
+                        format: int64
+                        description: bookingItemId has beed deleted from booking
+
+components:
+  schemas:
+    Business:
+      type: object
+      properties:
+        businessId:
+          type: integer
+          format: int64
+          minimum: 1
+        name:
+          type: string
+          example: Z-Hotel
+      required:
+        - businessId
+    Item:
+      type: object
+      properties:
+        name:
+          type: string
+          example: Room 2022
+        type:
+          type: string
+          enum:
+            - PLACE
+            - CONSUMING
+    Guest:
+      type: object
+      properties:
+        firstName:
+          type: string
+          example: Chau
+        lastName:
+          type: string
+          example: Tran
+        email:
+          type: string
+          format: email
+          example: chautn89@gmail.com
+        mobileNumber:
+          type: string
+          example: 84936180989
+        status:
+          type: string
+          enum:
+            - CHECKED_IN
+            - CHECKED_OUT
+    Booking:
+      type: object
+      properties:
+        identifier:
+          type: string
+          example: KDKTWZ
+        timezone:
+          type: string
+          example: Asia/Manila
+          description: reference java.util.TimeZone
+        bookingAt:
+          type: string
+          format: date-time
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        type:
+          type: string
+          enum:
+            - ONLINE
+            - OFFLINE
+        status:
+          type: string
+          enum:
+            - CLAIMED
+        owner:
+          $ref: '#/components/schemas/Guest'
+    BookingCriteria:
+      type: object
+      properties:
+        identifierEqual:
+          type: string
+        applicationIdEqual:
+          type: string
+        businessIdEqual:
+          type: integer
+          format: int64
+    Result:
+      type: object
+      properties:
+        status:
+          type: string
+          enum:
+            - SUCCESS
+            - ERROR
+        messages:
+          type: array
+          items:
+            type: string
+            example: Request success
+        metadata:
+          type: object
+          default: null
+        data:
+          type: object
+      required:
+        - status
+  securitySchemes:
+    application:
+      type: oauth2
+      flows:
+        clientCredentials:
+          tokenUrl: 'http://example.com/oauth/token'
+          scopes:
+            booking: allows access booking api
